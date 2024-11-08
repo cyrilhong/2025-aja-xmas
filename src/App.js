@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import './App.css';
 import Lottie from "lottie-react";
 import card from "./animation/card.json";
@@ -8,7 +8,7 @@ import jio from "./img/jio.svg";
 import bu from "./img/bu.svg";
 import jian from "./img/jian.svg";
 import exclamation from "./img/exclamation.svg";
-import { Fade } from 'react-reveal'
+import { Fade, } from 'react-reveal'
 import blessing from "./img/blessing.svg";
 import getInTouch from "./img/get-in-touch.svg";
 import happy from "./img/happy.svg";
@@ -16,6 +16,8 @@ import hohoho from "./img/hohoho.svg";
 import hohohoAnimate from "./animation/hohoho.json";
 import logo from "./img/aja-logo.svg";
 import lineDesktop from "./animation/line-desktop.json"
+import lineMb from "./animation/line-mobile.json"
+import closeBtn from './img/close.svg'
 
 function App() {
   const contentRef = useRef(null);
@@ -23,19 +25,41 @@ function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const lottieRef = useRef(null);
   const hohohoRef = useRef(null);
+  const hohohoMbRef = useRef(null);
+  const lineAnimateMb = useRef(null);
   const [ctaIsHovered, setCtaIsHovered] = useState(false);
   const [hohohoIsHovered, setHohohoIsHovered] = useState(false);
+  const [globeHeight, setGlobeHeight] = useState(0)
+  const [globewidth, setGlobewidth] = useState(0)
+  const [windowWidth, setWindowWidth] = useState(0)
 
   const updateContentHeight = () => {
     if (contentRef.current) {
       const height = contentRef.current.offsetHeight;
       const width = contentRef.current.offsetWidth;
-      setZoom(height / 1024);
+      // 設定縮放比例
+      setZoom(height / 1029 > 1 ? 1 : height / 1029); // 確保這裡的 height 是正確的
+
+      const windowHeight = window.innerHeight;
+      const windowWidth = window.innerWidth;
+      setWindowWidth(windowWidth)
+      if (windowHeight < 1029) {
+        setGlobeHeight(windowHeight);
+      } else {
+        setGlobeHeight(1029);
+      }
+      const scaledWidth = (windowHeight / 1029) * 1440;
+      setGlobewidth(windowWidth < scaledWidth ? windowWidth : scaledWidth);
     }
   };
-
   useEffect(() => {
-    updateContentHeight();
+    setTimeout(() => {
+      updateContentHeight(); // 直接在 render 完成後執行
+    }, 1000);
+  }, [])
+
+  useLayoutEffect(() => {
+    updateContentHeight(); // 直接在 render 完成後執行
     window.addEventListener('resize', updateContentHeight);
     return () => {
       window.removeEventListener('resize', updateContentHeight);
@@ -48,9 +72,9 @@ function App() {
 
 
   const ctaMouseEnter = () => {
-    lottieRef.current.setDirection(1); // 設置播放方向為正向
     setCtaIsHovered(true);
     if (lottieRef.current) {
+      lottieRef.current.setDirection(1); // 設置播放方向為正向
       lottieRef.current.play(); // 播放動畫
     }
   };
@@ -80,19 +104,43 @@ function App() {
       hohohoRef.current.play(); // 播放動畫
     }
   };
+  const hohohoMbMouseEnter = () => {
+    hohohoMbRef.current.setDirection(1); // 設置播放方向為正向
+    setHohohoIsHovered(true);
+    if (hohohoMbRef.current) {
+      hohohoMbRef.current.play(); // 播放動畫
+    }
+  };
+
+  const hohohoMbMouseLeave = () => {
+    setHohohoIsHovered(false);
+    if (hohohoMbRef.current) {
+      hohohoMbRef.current.play(); // 播放動畫
+      hohohoMbRef.current.setDirection(-1); // 設置播放方向為反向
+      hohohoMbRef.current.play(); // 播放動畫
+    }
+  };
 
   useEffect(() => {
     if (lottieRef.current) {
       lottieRef.current.stop(); // 停止動畫
     }
-    if(hohohoRef.current){
+    if (hohohoRef.current) {
       hohohoRef.current.stop();
+    }
+    if (hohohoMbRef.current) {
+      hohohoMbRef.current.stop();
     }
   }, []);
 
+  const [caseOpen, setCaseOpen] = useState(false)
+
+
   return (
     <div className="App">
-      <Card>
+      <Card
+        globewidth={globewidth}
+      >
         <div className='lottie' ref={contentRef}>
           <Lottie animationData={card} loop={false} />
         </div>
@@ -173,18 +221,17 @@ function App() {
                 className='line-animate'
                 animationData={lineDesktop}
                 loop={false}
-                autoPlay={false}
                 lottieRef={lottieRef}
+                autoPlay={false}
               />
             </a>
             <img className='happy' src={happy} alt="happy" />
           </div>
-          <div 
+          <div
             className="hohoho"
             onMouseEnter={hohohoMouseEnter}
             onMouseLeave={hohohoMouseLeave}
           >
-            <img src={hohoho} alt="hohoho" />
             <Lottie
               className='animate'
               animationData={hohohoAnimate}
@@ -193,51 +240,174 @@ function App() {
               lottieRef={hohohoRef}
             />
           </div>
+          <div className="logo">
+            <img src={logo} alt="logo" />
+          </div>
+          <div className='look-back'>
+            <FlipWrapper
+            // isHovered={isAnimating}
+            // onMouseEnter={handleMouseEnter}
+            // onMouseLeave={handleAnimationEnd}
+            >
+              <FlipBack 
+              // isAnimating={isAnimating} 
+              />
+              <p>回顧最近我們做了什麼！！</p>
+            </FlipWrapper>
+            <ul>
+              <a href='https://www.aja-creative.com/case/line-bank' target='_blank' rel="noreferrer"><li><p>LINE Bank 理財網</p></li></a>
+              <a href='https://www.aja-creative.com/case/richart' target='_blank' rel="noreferrer"><li><p>RICHART APP</p></li></a>
+            </ul>
+          </div>
         </div>
+
+      </Card>
+      <MobileCard
+        // windowWidth={windowWidth}
+      >
         <div className="logo">
           <img src={logo} alt="logo" />
         </div>
-        <div className='look-back' style={{ zoom: zoom }}>
-          <FlipWrapper
-            isHovered={isAnimating}
-            onMouseEnter={handleMouseEnter}
-          // onMouseLeave={handleAnimationEnd}
-          >
-            <FlipBack isAnimating={isAnimating} />
-            <p>回顧最近我們做了什麼！！</p>
-          </FlipWrapper>
-          <ul>
-            <a href='https://www.aja-creative.com/case/line-bank' target='_blank' rel="noreferrer"><li><p>LINE Bank 理財網</p></li></a>
-            <a href='https://www.aja-creative.com/case/richart' target='_blank' rel="noreferrer"><li><p>RICHART APP</p></li></a>
-          </ul>
+        <div className="blessing">
+          <img src={blessing} alt="blessing" />
         </div>
-      </Card>
+        <div className='content'>
+          <div className="title">
+            <Fade bottom duration={500} delay={2100}>
+              <img src={hao} alt="hao" />
+            </Fade>
+            <Fade bottom duration={500} delay={2200}>
+              <img src={jio} alt="jio" />
+            </Fade>
+            <Fade bottom duration={500} delay={2300}>
+              <img src={bu} alt="bu" />
+            </Fade>
+            <Fade bottom duration={500} delay={2400}>
+              <img src={jian} alt="jian" />
+            </Fade>
+            <Fade bottom duration={500} delay={2500}>
+              <img src={exclamation} alt="exclamation" />
+            </Fade>
+          </div>
+          <div className="sub-title">
+            <Fade bottom duration={500} delay={2800} cascade>
+              <p>感恩過去一年的信任與合作， </p>
+            </Fade>
+            <Fade bottom duration={500} delay={3100} cascade>
+              <p>期待未來共創佳績，佳節愉快！</p>
+            </Fade>
+          </div>
+        </div>
+        <div className='flip'>
+          <div
+            className="hohoho"
+            onMouseEnter={hohohoMbMouseEnter}
+            onMouseLeave={hohohoMbMouseLeave}
+          >
+            <Lottie
+              className='animate'
+              animationData={hohohoAnimate}
+              loop={false}
+              autoPlay={false}
+              lottieRef={hohohoMbRef}
+            />
+            <a href='https://www.aja-creative.com/contact' target='_self'>
+              Get in touch
+            </a>
+          </div>
+          <div className='look-back'>
+            <MbFlipWrapper
+              // isHovered={isAnimating}
+              // onMouseEnter={handleMouseEnter}
+            // onMouseLeave={handleAnimationEnd}
+            >
+              <MbFlipBack 
+              // isAnimating={isAnimating} 
+              />
+            </MbFlipWrapper>
+          </div>
+        </div>
+      </MobileCard>
+      <Cases
+        onClick={() => setCaseOpen(true)}
+        className={caseOpen && 'active'}
+      >
+
+        {caseOpen ?
+          <div className={`opened-cases ${caseOpen && 'active'}`}>
+            <Fade bottom delay={500}>
+              <Lottie
+                className='line-animate'
+                animationData={lineMb}
+                loop={true}
+                autoPlay={false}
+                lottieRef={lineAnimateMb} // 使用 lineAnimateMb 控制播放
+              />
+            </Fade>
+            <Fade bottom duration={500} cascade delay={1000}>
+              <ul>
+                <a href='https://www.aja-creative.com/case/line-bank' target='_blank' rel="noreferrer"><li><p>LINE Bank 理財網</p></li></a>
+                <a href='https://www.aja-creative.com/case/richart' target='_blank' rel="noreferrer"><li><p>RICHART APP</p></li></a>
+              </ul>
+            </Fade>
+            <Fade bottom duration={500} cascade delay={1500}>
+              <div
+                className='close-btn'
+                onClick={(event) => {
+                  event.stopPropagation(); // 阻止事件冒泡
+                  setCaseOpen(false);
+                }}
+              >
+                <img src={closeBtn} alt="close" />
+              </div>
+            </Fade>
+          </div>
+          :
+          <>
+            回顧最近我們做了什麼！！
+          </>
+        }
+      </Cases>
     </div>
   );
 }
 
 export default App;
-
 const Card = styled.div`
-  width: 1440px;
+  width: ${props => props.globewidth}px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   position: relative;
+  align-items: center;
   .lottie {
     position: absolute;
+    svg{
+      /* height: 100vh!important; */
+    }
   }
   .content {
     position: relative;
     height: 1024px;
+    max-width: 1440px;
+    width: 100%;
     .title {
       display: flex;
       left: 100px;
       top: 100px;
       position: absolute;
       img {
+        &:nth-child(2) {
+          margin-top: 10px;
+        }
         &:nth-child(3) {
-          margin-left: -10px;
+          margin: -8px 0 0 -10px;
+        }
+        &:nth-child(4) {
+          margin: -12px 0 0;
+        }
+        &:nth-child(5) {
+          margin: -10px 10px 0;
         }
       }
     }
@@ -246,7 +416,7 @@ const Card = styled.div`
       text-align: left;
       left: 100px;
       position: relative;
-      top: 220px;
+      top: 200px;
       font-family: "Noto Sans TC";
       font-size: 20px;
       line-height: 36px;
@@ -262,9 +432,9 @@ const Card = styled.div`
   .blessing {
     position: absolute;
     right: 80px;
-    top: -10px;
+    top: 0px;
     transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    animation: appear 0s 1.5s forwards;
+    animation: appear 2s 2.5s forwards;
     opacity: 0;
     &:hover {
       transform: rotate(-12deg);
@@ -273,9 +443,11 @@ const Card = styled.div`
   .getInTouch {
     position: absolute;
     left: 150px;
-    top: 500px;
-    animation: appear 0s 1.5s forwards;
+    top: 533px;
+    animation: appear 3s 3s forwards;
+    transition: all .5s ease;
     opacity: 0;
+    z-index: 10;
     .cta {
       cursor: pointer;
       transition: all .5s ease-in-out;
@@ -302,6 +474,7 @@ const Card = styled.div`
       position: absolute;
       left: -72px;
       top: -116px;
+      animation: appear 2s 2s forwards;
     }
     .cta-svg {
       background-color: #CA9E52;
@@ -311,9 +484,9 @@ const Card = styled.div`
     .happy {
       position: relative;
       background-color: initial;
-      left: -40px;
-      top: 150px;
-      z-index: 5;
+      left: -28px;
+      top: 100px;
+      z-index: 15;
       cursor: pointer;
       transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
       &:hover{
@@ -323,33 +496,34 @@ const Card = styled.div`
   }
   .hohoho {
     position: absolute;
-    right: 130px;
-    top: 440px;
+    right: 0;
+    bottom: 0;
     transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    animation: appear 0s 1.5s forwards;
+    animation: appear 4s 3.5s forwards;
     opacity: 0;
     cursor: pointer;
     .animate{
       position: absolute;
       width: 650px;
-      bottom: -10%;
-      right: -12.5%;
+      right: 60px;
+      bottom: 100px;
     }
   }
   .logo {
     position: absolute;
-    bottom: 24px;
-    right: 28px;
+    bottom: 35px;
+    right: 40px;
     animation: appear 0s 1.5s forwards;
     opacity: 0;
   }
   .look-back {
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: 39px;
     width: 100%;
     opacity: 0;
     animation: appear 0s 1.5s forwards;
+    max-width: 1140px;
     .flip {
       width: 47%;
       left: 22px;
@@ -364,7 +538,7 @@ const Card = styled.div`
       align-items: center;
       gap: 36px;
       position: relative;
-      top: -60px;
+      top: -16px;
       left: 40px;
       margin: 0;
       opacity: 0;
@@ -429,30 +603,36 @@ const Card = styled.div`
         clip-path: polygon(5.8% 60.7%, 3.1% 100%, 100% 99%);
       }
       100% {
-        clip-path: polygon(5.6% 62%, 13% 31%, 100% 100%);
+        clip-path: polygon(5.6% 62%, 17% 15%, 100% 100%);
         background-color: #9E9E9E;
       }
     }
   }
+  @media (max-width: 960px) {
+    display: none;
+  }
 `;
 
 const FlipWrapper = styled.div`
-  width: 708px;
-  height: 216px;
-  left: 0;
-  top: 0;
+    position: absolute;
+    width: 708px;
+    height: 216px;
+    left: 0;
+    bottom: 16px;
   p {
     font-size: 18px;
     font-family: "Noto Sans TC";
     font-weight: bold;
     color: #fff;
     transform: rotate(9.48deg);
-    bottom: 44%;
+    bottom: 34%;
     position: absolute;
-    left: 6%;
+    left: 14%;
     z-index: 10;
     transition: all .5s ease-in;
-    opacity: ${({ isHovered }) => (isHovered ? 1 : 0)};
+    /* opacity: ${({ isHovered }) => (isHovered ? 1 : 0)}; */
+    opacity: 0;
+    animation: appear 0s 3.5s forwards;
   }
 `;
 
@@ -461,14 +641,10 @@ const FlipBack = styled.div`
   background-color: #EBE1D9;
   width: 708px;
   height: 216px;
-  top: -20px;
+  bottom: -16px;
   position: relative;
   z-index: 1;
-  animation: ${({ isAnimating }) =>
-    isAnimating
-      ? css`${flip} .5s forwards`
-      : 'none'
-  };
+  animation: flip 2.5s 2.5s forwards;
 `;
 
 const flip = keyframes`
@@ -483,13 +659,320 @@ const flip = keyframes`
   }
 `;
 
-// 定义反向动画
-const flipReverse = keyframes`
-  from {
-    clip-path: polygon(5.6% 62%, 13% 31%, 100% 100%);
-    background-color: #9E9E9E;
+
+const MobileCard = styled.div`
+  display: none;
+  margin: 0 12px; 
+  width: calc(100% - 24px);
+  .content{
+    width: 100%;
+    display: block;
+    background-color: #F3E9E1;
+    height: 304px;
+    margin-top: 20px;
+    position: relative;
+    &::before{
+      content: '';
+      width: 0;
+      height: 0;
+      display: block;
+      top: -20px;
+      position: relative;
+      border-bottom: 20px solid #F3E9E1;
+      border-left: ${props => `${props.windowWidth - 24}px`} solid transparent;
+    }
+    .title {
+      transform: scale(.57);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      top: -14px;
+      position: relative;
+      img {
+        &:nth-child(3) {
+          margin-left: -10px;
+        }
+      }
+    }
+    .sub-title {
+      display: block;
+      text-align: center;
+      /* left: 100px; */
+      position: relative;
+      /* top: 220px; */
+      font-family: "Noto Sans TC";
+      font-size: 13px;
+      line-height: 22px;
+      font-weight: normal;
+      color: #436335;
+      margin-top: -32px;
+    }
+    p {
+      margin: 0;
+    }
   }
-  to {
-    clip-path: polygon(5.8% 60.7%, 3.1% 100%, 100% 99%);
+  .logo{
+    display: flex;
+    img{
+      width: 50px;
+      margin-top: 24px;
+    }
   }
+  .flip{
+    width: 100%;
+    height: 0;
+    background-color: #F3E9E1;
+    animation: extend 1s 1s forwards;
+    position: relative;
+    padding-bottom: 20px;
+    margin-top: -172px;
+  }
+  .blessing {
+      position: absolute;
+      width: 94px;
+      right: 12px;
+      top: 0;
+      transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      /* animation: appear 2s 2.5s forwards; */
+      z-index: 1;
+      img{
+        width: 100%;
+      }
+      &:hover {
+        transform: rotate(-12deg);
+      }
+    }
+  @media (max-width: 960px) {
+    display: block;
+  }
+  @keyframes extend {
+      0% {
+        height: 0;
+        min-height: 0;
+      }
+      100% {
+        /* height: calc( 100vh - 392px); */
+        /* height: 50vh; */
+        height: calc( 100vh - 530px );
+        min-height: 410px;
+      }
+    }
+    .look-back {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      opacity: 0;
+      animation: appear 0s 1.5s forwards;
+    .flip {
+      width: 47%;
+      left: 22px;
+      bottom: 38px;
+      position: absolute;
+    }
+    
+    .look-back {
+      clip-path: polygon(5.8% 60.7%, 3.1% 100%, 100% 99%);
+      background-color: #EBE1D9;
+      width: calc( 100% - 24px );
+      height: 48px;
+      bottom: 0;
+      position: relative;
+      z-index: 1;
+      animation: appear 0s 1.53s forwards;
+      opacity: 0;
+    }
+
+    @keyframes appear {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  }
+  .hohoho {
+    transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: appear 4s 3.5s forwards;
+    opacity: 0;
+    cursor: pointer;
+    position: relative;
+    top: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    img{
+      width: 192px;
+    }
+    .animate{
+      margin-top: 0;
+      /* margin-top: -14vh; */
+      svg{
+        max-width: 333px;
+      }
+    }
+    a{
+      color: #fff;
+      text-decoration: none;
+      background-color: #CA9E52;
+      padding: 12px 15px;
+      border: 0;
+      font-weight: bold;
+      /* margin-top: 30px; */
+      &:active{
+        background-color: #B1812F;
+      }
+    }
+  }
+  @media (max-width: 400px) {
+    .hohoho{
+      transform: scale(.8);
+      .animate{
+        margin-top: -34px;
+      }
+    }
+  }
+`
+
+const Cases = styled.div`
+  border-top: 1px solid #FDF0E6;
+  padding: 16px;
+  color: #FDF0E6;
+  font-weight: bold;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: calc(100% - 36px);
+  height: 50px;
+  z-index: 20;
+  background-color: #436335;
+  transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+  cursor: pointer;
+  display: none;
+  &.active{
+    height: 64vh;
+  }
+  ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      position: relative;
+      margin: 0;
+      opacity: 0;
+      animation: appear 0s 1.53s forwards;
+      /* margin-top: 180px; */
+      a {
+        color: initial;
+        text-decoration: none;
+        z-index: 1;
+      }
+      p{
+        z-index: 10;
+        margin: 0;
+        position: relative; 
+        font-size: 18px;
+      }
+      li {
+        position: relative;
+        padding-left: 26px;
+        font-family: "Noto Sans TC";
+        font-weight: bold;
+        color: #FDF0E6;
+        cursor: pointer;
+        &:hover{
+          &::before {
+            width: 110%;
+          }  
+        }
+        &::before {
+          content: '';
+          position: absolute;
+          transition: all .5s ease-in-out;
+          left: 0;
+          top: 8px;
+          width: 10px;
+          z-index: 0;
+          height: 10px;
+          background-color: #8CC1FF;
+        }
+      }
+    }
+    .line-animate{
+      width: 100%;
+      max-width: 375px;
+      position: relative;
+      /* left: -12%; */
+      margin: 0 auto 6px;
+      /* top: 82px; */
+      svg{
+        width: 136px!important;
+        margin-left: -172px; 
+      }
+    }
+    .opened-cases{
+      margin-top: 82px;
+    }
+    .close-btn{
+      cursor: pointer;
+      bottom: 42px;
+      position: absolute;
+      left: calc(50% - 22px); 
+    }
+    @media (max-width: 960px) {
+      display: block;
+    }
+  `
+
+const MbFlipWrapper = styled.div`
+  width: 100%;
+  height: 48px;
+  left: 0;
+  top: 0;
+  p {
+    font-size: 18px;
+    font-family: "Noto Sans TC";
+    font-weight: bold;
+    color: #fff;
+    bottom: 50%;
+    position: absolute;
+    left: 9%;
+    z-index: 10;
+    transition: all .5s ease-in;
+    /* opacity: ${({ isHovered }) => (isHovered ? 1 : 0)}; */
+    opacity: 0;
+    animation: appear 0s 3.5s forwards;
+  }
+`;
+
+const MbFlipBack = styled.div`
+  clip-path: polygon(0 100%, 0 100%, 100% 100%);
+  background-color: #EBE1D9;
+  width: 100%;
+  height: 48px;
+  top: 0;
+  position: relative;
+  z-index: 1;
+  animation: mbFlip 2.5s 2.5s forwards;
+  /* animation: ${({ isAnimating }) =>
+    isAnimating
+      ? css`${flip} .5s forwards`
+      : 'none'
+  }; */
+
+  @keyframes mbFlip {
+      0% {
+        clip-path: polygon(0 100%, 0 100%, 100% 100%);
+      }
+      100% {
+        clip-path: polygon(0 100%, 7% 18%, 100% 100%);
+        background-color: #9E9E9E;
+      }
+    }
 `;
