@@ -15,13 +15,17 @@ import hohoho from "./img/hohoho.svg";
 import hohohoAnimate from "./animation/hohoho.json";
 import logo from "./img/aja-logo.svg";
 import lineDesktop from "./animation/line-desktop.json"
-import lineMb from "./animation/line-mobile.json"
+import deco from "./animation/deco.json"
 import closeBtn from './img/close.svg'
+import commingSoon from './img/comming-soon.svg'
+import pin from './img/pin.svg'
+import hi from './img/hi.svg'
 
 function App() {
   const contentRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
+  const cardRef = useRef(null);
   const lottieRef = useRef(null);
   const hohohoRef = useRef(null);
   const hohohoMbRef = useRef(null);
@@ -32,6 +36,7 @@ function App() {
   const [globeHeight, setGlobeHeight] = useState(0)
   const [globewidth, setGlobewidth] = useState(0)
   const [windowWidth, setWindowWidth] = useState(0)
+  const [ctaPosition, setCtaPosition] = useState({ x: 0, y: 0 });
 
   const updateContentHeight = () => {
     if (contentRef.current) {
@@ -44,7 +49,7 @@ function App() {
       const windowWidth = window.innerWidth;
       setWindowWidth(windowWidth)
       setGlobeHeight(windowHeight);
-      
+
       const scaledWidth = (windowHeight / 1029) * 1440;
       setGlobewidth(scaledWidth);
     }
@@ -63,10 +68,31 @@ function App() {
     };
   }, []);
 
-  const handleMouseEnter = () => {
-    setIsAnimating(true); // 開始動畫
-  };
+  useEffect(() => {
+    if (cardRef.current) {
+      cardRef.current.play(); // 直接播放動畫
+      setTimeout(() => {
+        cardRef.current.goToAndStop(54, true); // 播放後停在第 54 幀
+        setTimeout(() => {
+          cardRef.current.play();
+        }, 2000);
+      }, 2000);
+    }
+  }, []);
 
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      const { clientX, clientY } = event;
+      // console.log(clientX, clientY);
+
+      setCtaPosition({ x: clientX * 0.01, y: clientY * 0.01 });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const ctaMouseEnter = () => {
     setCtaIsHovered(true);
@@ -86,19 +112,34 @@ function App() {
   };
 
   const hohohoMouseEnter = () => {
-    hohohoRef.current.setDirection(1); // 設置播放方向為正向
     setHohohoIsHovered(true);
+
+    // 清除自动播放的定时器
+    if (desktopIntervalRef.current) {
+      clearInterval(desktopIntervalRef.current);
+      desktopIntervalRef.current = null;
+    }
+
     if (hohohoRef.current) {
-      hohohoRef.current.play(); // 播放動畫
+      hohohoRef.current.stop();
+      hohohoRef.current.setDirection(1); // 设置正向播放
+      hohohoRef.current.play(); // 开始播放
     }
   };
 
+
   const hohohoMouseLeave = () => {
     setHohohoIsHovered(false);
+
     if (hohohoRef.current) {
-      hohohoRef.current.play(); // 播放動畫
-      hohohoRef.current.setDirection(-1); // 設置播放方向為反向
-      hohohoRef.current.play(); // 播放動畫
+      hohohoRef.current.stop();
+      hohohoRef.current.setDirection(-1);
+      hohohoRef.current.goToAndPlay(hohohoRef.current.animationItem.totalFrames, true);
+    }
+
+    // 重新启动自动播放的定时器
+    if (!desktopIntervalRef.current) {
+      desktopIntervalRef.current = setInterval(playDesktopAnimation, 8000);
     }
   };
   const hohohoMbMouseEnter = () => {
@@ -106,6 +147,11 @@ function App() {
     setHohohoIsHovered(true);
     if (hohohoMbRef.current) {
       hohohoMbRef.current.play(); // 播放動畫
+      setTimeout(() => {
+        if (hohohoMbRef.current) {
+          hohohoMbRef.current.play(); // 每4秒重複播放一次
+        }
+      }, 4000);
     }
   };
 
@@ -118,6 +164,61 @@ function App() {
     }
   };
 
+  const [hohohoAnimating, setHohohoAnimating] = useState(false);
+  const timeoutRef = useRef(null); // 用于存储 setTimeout 的 ID
+  const intervalRef = useRef(null); // 用于存储 setInterval 的 ID
+  const [isReverse, setIsReverse] = useState(false);
+
+  const playAnimation = () => {
+    if (hohohoMbRef.current && !hohohoAnimating) {
+      // console.log("開始");
+      setHohohoAnimating(true);
+      setIsReverse(false);
+
+      // 重置動畫到初始狀態
+      hohohoMbRef.current.stop();
+      hohohoMbRef.current.setDirection(1);
+      hohohoMbRef.current.play();
+
+      // 清除之前的 setTimeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        if (hohohoMbRef.current) {
+          // console.log("開始反向播放");
+          setIsReverse(true);
+          hohohoMbRef.current.setDirection(-1);
+          hohohoMbRef.current.play();
+        }
+      }, 4000);
+    }
+  };
+
+
+  useEffect(() => {
+    // 首次調用播放動畫的函數
+    const initialTimeout = setTimeout(() => {
+      playAnimation();
+
+      // 每 8000 毫秒重複調用 playAnimation
+      intervalRef.current = setInterval(playAnimation, 6000);
+    }, 6000);
+
+    // 組件卸載時清除計時器
+    return () => {
+      clearTimeout(initialTimeout);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+
   useEffect(() => {
     if (lottieRef.current) {
       lottieRef.current.stop(); // 停止動畫
@@ -128,6 +229,9 @@ function App() {
     if (hohohoMbRef.current) {
       hohohoMbRef.current.stop();
     }
+
+
+
   }, []);
 
   const [caseOpen, setCaseOpen] = useState(false)
@@ -135,12 +239,68 @@ function App() {
 
   useEffect(() => {
     if (mbRef.current) {
-      console.log(globeHeight);
-      console.log(mbRef.current.offsetHeight);
-      
-      setMbHeight(mbRef.current.offsetHeight); // 獲取 mbRef 的高度
+      // console.log(globeHeight);
+      // console.log(mbRef.current.offsetHeight);
+
+      setTimeout(() => {
+        setMbHeight(mbRef.current.offsetHeight);
+        console.log(mbRef.current.offsetHeight);
+
+      }, 500);// 獲取 mbRef 的高度
     }
   }, [mbRef]);
+
+
+  const [hohohoAnimatingDesktop, setHohohoAnimatingDesktop] = useState(false);
+  const desktopTimeoutRef = useRef(null);
+  const desktopIntervalRef = useRef(null);
+  const [isDesktopReverse, setIsDesktopReverse] = useState(false);
+
+  const playDesktopAnimation = () => {
+    if (hohohoRef.current && !hohohoAnimatingDesktop) {
+      setHohohoAnimatingDesktop(true);
+      setIsDesktopReverse(false);
+
+      // Reset the animation to the initial state
+      hohohoRef.current.stop();
+      hohohoRef.current.setDirection(1);
+      hohohoRef.current.play();
+
+      // Clear any previous timeouts
+      if (desktopTimeoutRef.current) {
+        clearTimeout(desktopTimeoutRef.current);
+      }
+
+      desktopTimeoutRef.current = setTimeout(() => {
+        if (hohohoRef.current) {
+          setIsDesktopReverse(true);
+          hohohoRef.current.setDirection(-1);
+          hohohoRef.current.play();
+        }
+      }, 4000);
+    }
+  };
+
+  useEffect(() => {
+    // Initially call the playDesktopAnimation function after 8 seconds
+    const initialDesktopTimeout = setTimeout(() => {
+      playDesktopAnimation();
+
+      // Then set up an interval to repeat the animation every 8 seconds
+      desktopIntervalRef.current = setInterval(playDesktopAnimation, 8000);
+    }, 8000);
+
+    // Clean up the timeouts and intervals when the component unmounts
+    return () => {
+      clearTimeout(initialDesktopTimeout);
+      if (desktopTimeoutRef.current) {
+        clearTimeout(desktopTimeoutRef.current);
+      }
+      if (desktopIntervalRef.current) {
+        clearInterval(desktopIntervalRef.current);
+      }
+    };
+  }, []);
 
 
   return (
@@ -149,9 +309,18 @@ function App() {
         globewidth={globewidth}
       >
         <div className='lottie' ref={contentRef}>
-          <Lottie animationData={card} loop={false} />
+          <Lottie
+            lottieRef={cardRef}
+            animationData={card}
+            loop={false}
+          />
         </div>
         <div className='content' style={{ zoom: zoom }}>
+          <div className="hi">
+            <Fade bottom duration={500} delay={2000}>
+              <img src={hi} alt="hi" />
+            </Fade>
+          </div>
           <div className="title">
             <Fade bottom duration={500} delay={2100}>
               <img src={hao} alt="hao" />
@@ -170,15 +339,20 @@ function App() {
             </Fade>
           </div>
           <div className="sub-title">
-            <Fade bottom duration={500} delay={2800} cascade>
-              <p>感恩過去一年的信任與合作， </p>
-            </Fade>
-            <Fade bottom duration={500} delay={3100} cascade>
-              <p>期待未來共創佳績，佳節愉快！</p>
+            <Fade bottom duration={500} delay={2800}>
+              <p>AJA持續推廣體驗設計，並協助企業夥伴們一起共創產品創新，
+                我們在研究、體驗策略、品牌及數位產品上，完成許多精彩篇章。2025年即將迎來第16個年頭，感謝夥伴們的支持，<br />
+                我們即將入住華山特區的新辦公室，歡迎大家過來坐坐！</p>
             </Fade>
           </div>
-          <div className="blessing">
+          <div className="blessing"
+            style={{
+              top: `-${ctaPosition.y}px`,
+              right: `${-ctaPosition.x + 80}px`
+            }}
+          >
             <img src={blessing} alt="blessing" />
+            <p>Blessing!</p>
           </div>
           <div className="getInTouch">
             <a
@@ -188,6 +362,10 @@ function App() {
               href='https://www.aja-creative.com/contact'
               target='_blank'
               rel="noreferrer"
+              style={{
+                top: `-${ctaPosition.y}px`,
+                left: `-${ctaPosition.x}px`
+              }}
             >
               <div className='lexend'>
                 Get in touch
@@ -227,13 +405,13 @@ function App() {
                 <path d="M23.914 160.592L18.5413 161.71L16.1875 162.096L15.8472 159.478L18.2216 159.25L23.7016 158.957L23.914 160.592ZM28.0431 159.216C28.1504 160.041 27.6396 160.704 26.8146 160.812C25.9895 160.919 25.3399 160.39 25.2347 159.581C25.1316 158.788 25.6244 158.111 26.4495 158.003C27.2745 157.896 27.94 158.423 28.0431 159.216Z" fill="#FDF0E6" />
               </svg>
 
-              <Lottie
+              {/* <Lottie
                 className='line-animate'
                 animationData={lineDesktop}
                 loop={false}
                 lottieRef={lottieRef}
                 autoPlay={false}
-              />
+              /> */}
             </a>
             <img className='happy' src={happy} alt="happy" />
           </div>
@@ -259,9 +437,6 @@ function App() {
             // onMouseEnter={handleMouseEnter}
             // onMouseLeave={handleAnimationEnd}
             >
-              <FlipBack
-              // isAnimating={isAnimating} 
-              />
               <p>回顧最近我們做了什麼！！</p>
             </FlipWrapper>
             <ul>
@@ -280,9 +455,19 @@ function App() {
           <img src={logo} alt="logo" />
         </div>
         <div className="blessing">
-          <img src={blessing} alt="blessing" />
+          <Lottie
+            className='blessing-animate'
+            animationData={deco}
+            loop={true}
+            autoPlay={true}
+          />
         </div>
         <div className='content'>
+          <div className="hi">
+            <Fade bottom duration={500} delay={2000}>
+              <img src={hi} alt="hi" />
+            </Fade>
+          </div>
           <div className="title">
             <Fade bottom duration={500} delay={2100}>
               <img src={hao} alt="hao" />
@@ -301,11 +486,20 @@ function App() {
             </Fade>
           </div>
           <div className="sub-title">
-            <Fade bottom duration={500} delay={2800} cascade>
-              <p>感恩過去一年的信任與合作， </p>
-            </Fade>
-            <Fade bottom duration={500} delay={3100} cascade>
-              <p>期待未來共創佳績，佳節愉快！</p>
+            <Fade
+              bottom
+              duration={1000}
+              delay={2800}
+            // cascade
+            >
+              <p>
+                AJA持續推廣體驗設計，<br />
+                協助台灣企業在研究、策略、品牌<br />
+                及數位產品上創新。<br />
+                2025年將邁入第16年，感謝夥伴的支持！<br />
+                我們即將入住華山特區的新辦公室，<br />
+                歡迎來坐坐！
+              </p>
             </Fade>
           </div>
         </div>
@@ -320,7 +514,7 @@ function App() {
               className='animate'
               animationData={hohohoAnimate}
               loop={false}
-              autoPlay={false}
+              autoPlay={true}
               lottieRef={hohohoMbRef}
             />
             <a href='https://www.aja-creative.com/contact' target='_self'>
@@ -347,7 +541,7 @@ function App() {
 
         {caseOpen ?
           <div className={`opened-cases ${caseOpen && 'active'}`}>
-            <Fade bottom delay={500}>
+            {/* <Fade bottom delay={500}>
               <Lottie
                 className='line-animate'
                 animationData={lineMb}
@@ -355,11 +549,13 @@ function App() {
                 autoPlay={false}
                 lottieRef={lineAnimateMb} // 使用 lineAnimateMb 控制播放
               />
-            </Fade>
+            </Fade> */}
             <Fade bottom duration={500} cascade delay={1000}>
               <ul>
                 <a href='https://www.aja-creative.com/case/line-bank' target='_blank' rel="noreferrer"><li><p className='lexend'>LINE Bank 理財網</p></li></a>
                 <a href='https://www.aja-creative.com/case/richart' target='_blank' rel="noreferrer"><li><p className='lexend'>RICHART APP</p></li></a>
+                <a target='_blank' rel="noreferrer"><li className="disabled"><p className='lexend'>富邦人壽保戶App</p><img className="comming-soon" src={commingSoon} alt="comming-soon" /></li></a>
+                <a className="last" target='_blank' rel="noreferrer"><li className="disabled"><p className='lexend'><img src={pin} alt="pin" />新辦公室全新規劃</p><img className="comming-soon" src={commingSoon} alt="comming-soon" /></li></a>
               </ul>
             </Fade>
             <Fade bottom duration={500} cascade delay={1500}>
@@ -404,11 +600,18 @@ const Card = styled.div`
     height: 1024px;
     //max-width: 1440px;
     width: 100%;
+    .hi{
+      position: absolute;
+      left: 96px;
+      top: 111px; 
+      transform: scale(1);
+    }
     .title {
       display: flex;
-      left: 100px;
-      top: 108px;
+      left: 148px;
+      top: 182px;
       position: absolute;
+      transform: scale(1);
       img {
         &:nth-child(2) {
           margin: 19px 0 0 -2px;
@@ -427,15 +630,19 @@ const Card = styled.div`
     .sub-title {
       display: block;
       text-align: left;
-      left: 100px;
+      left: 114px;
       position: relative;
-      top: 200px;
+      top: 326px;
+      width: 550px;
+      color: #436335;
       font-family: "Noto Sans TC";
-      font-size: 20px;
-      line-height: 36px;
-      letter-spacing: 0.3em;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 30px; /* 187.5% */
+      letter-spacing: 2.88px;
       transform: rotate(-3deg);
-      font-weight: bold;
+      font-weight: 600;
       color: #436335;
     }
     p {
@@ -444,16 +651,51 @@ const Card = styled.div`
   }
   .blessing {
     position: absolute;
-    right: 80px;
+    /* right: 80px; */
     cursor: pointer;
-    top: 0px;
+    /* top: 0px; */
     width: 202px;
     margin-top: 22px;
-    transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    animation: appear 2s 2.5s forwards;
+    z-index: 5;
+    /* transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55); */
+    animation: appear .5s 4s forwards;
     opacity: 0;
+    img{
+      animation: circle 8s 3s infinite linear;
+    }
+    p{
+      padding: 0;
+      margin: 0;
+      position: absolute;
+      color: #436335;
+      font-weight: bold;
+      font-size: 24px;
+      font-family: 'Noto Sans TC';
+      top: 86px;
+      left: 50px;
+      transform: rotate(12deg);
+    }
     &:hover {
-      transform: rotate(-12deg);
+      /* transform: rotate(-12deg); */
+    }
+    @keyframes circle {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes loop {
+      0% {
+        transform: rotate(0deg);
+      }
+      75% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(-12deg);
+      }
     }
   }
   .getInTouch {
@@ -467,18 +709,22 @@ const Card = styled.div`
     .lexend{
       font-weight: 700;
       position: absolute;
-      top: 130px;
-      left: 58px;
+      top: -108px;
+      left: 52px;
       z-index:  1;
+      font-size: 24px;
+      transition: all .5s ease-in-out;
     }
     .cta {
       cursor: pointer;
-      transition: all .5s ease-in-out;
+      /* transition: all .2s ease-in-out; */
       text-decoration: none;
       color: #fff;
       font-size: 28px;
+      position: relative;
       &:hover{
         .lexend{
+          transform: rotate(-10deg);
           color: #CA9E52;
         }
         .cta-svg {
@@ -518,12 +764,14 @@ const Card = styled.div`
       background-color: #CA9E52;
       transition: all .5s ease-in-out;
       border-radius: 100%;
+      zoom: .85;
     }
     .happy {
       position: relative;
       background-color: initial;
       left: -18px;
       top: 82px;
+      zoom: .85;
       z-index: 15;
       cursor: pointer;
       transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -533,18 +781,47 @@ const Card = styled.div`
     }
   }
   .hohoho {
-    position: absolute;
-    right: 0;
-    bottom: 0;
     transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     animation: appear 4s 3.5s forwards;
     opacity: 0;
     cursor: pointer;
+    /* position: relative; */
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    img{
+      width: 192px;
+    }
     .animate{
       position: absolute;
       width: 650px;
       right: 60px;
       bottom: 100px;
+    }
+    a{
+      color: #FDF0E6;
+      font-family: "Lexend Deca";
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 700;
+      line-height: 25px; /* 178.571% */
+      letter-spacing: 0.14px;
+      text-decoration: none;
+      margin-top: 8px;
+      margin-bottom: 30px;
+      background-color: #CA9E52;
+      padding: 12px 14px;
+      border: 0;
+      font-weight: bold;
+      /* margin-top: 30px; */
+      &:active{
+        background-color: #B1812F;
+      }
     }
   }
   .logo {
@@ -560,7 +837,7 @@ const Card = styled.div`
     bottom: 39px;
     width: 100%;
     opacity: 0;
-    animation: appear 0s 1.5s forwards;
+    animation: appear 0s 5.5s forwards;
     max-width: 1140px;
     .flip {
       width: 47%;
@@ -649,7 +926,6 @@ const Card = styled.div`
     display: none;
   }
 `;
-
 const FlipWrapper = styled.div`
     position: absolute;
     width: 712px;
@@ -661,10 +937,10 @@ const FlipWrapper = styled.div`
     font-family: "Noto Sans TC";
     font-weight: bold;
     color: #fff;
-    transform: rotate(9.48deg);
-    bottom: 32%;
+    transform: rotate(14deg);
+    bottom: 42%;
     position: absolute;
-    left: 14%;
+    left: 16%;
     z-index: 10;
     transition: all .5s ease-in;
     font-weight: 700;
@@ -702,16 +978,31 @@ const flip = keyframes`
 const MobileCard = styled.div`
   display: none;
   margin: 0 12px;
-  padding-top: 12px; 
+  padding-top: 24px; 
   width: calc(100% - 24px);
+
+  .logo{
+    width: 49px;
+    img{
+      width: 100%;
+    }
+  }
   .content{
     width: 100%;
     display: block;
     background-color: #F3E9E1;
     height: 304px;
-    margin-top: 20px;
+    margin-top: 12px;
     position: relative;
     animation: shrink 1s 1s forwards;
+    z-index: 1;
+    pointer-events: none;
+    .hi{
+      position: absolute;
+      left: -5px;
+      top: -16px; 
+      transform: scale(.5);
+    }
     &::before{
       content: '';
       width: 0;
@@ -723,12 +1014,13 @@ const MobileCard = styled.div`
       border-left: ${props => `${props.windowwidth - 24}px`} solid transparent;
     }
     .title {
-      transform: scale(.57);
+      transform: scale(.52);
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      top: 0px;
+      top: -15px;
+      left: 3px;
       position: relative;
       img {
         &:nth-child(2) {
@@ -752,14 +1044,17 @@ const MobileCard = styled.div`
       position: relative;
       /* top: 220px; */
       font-family: "Noto Sans TC";
-      font-size: 13px;
-      line-height: 22px;
       font-weight: normal;
       color: #436335;
       margin-top: -6px;
+      margin: -37px auto;
     }
     p {
       margin: 0;
+      font-size: 13px;
+      line-height: 20px; /* 187.5% */
+      letter-spacing: 3.36px;
+      font-weight: 600;
     }
   }
   @keyframes shrink {
@@ -767,16 +1062,9 @@ const MobileCard = styled.div`
         height: 304px;
       }
       100% {
-        height: 180px;
+        height: 226px;
       }
     }
-  .logo{
-    display: flex;
-    img{
-      height: 18px;
-      margin-top: 24px;
-    }
-  }
   .flip{
     width: 100%;
     height: 0;
@@ -784,16 +1072,43 @@ const MobileCard = styled.div`
     animation: extend 1s 1s forwards;
     position: relative;
     padding-bottom: 20px;
-    /* margin-top: -20vh; */
+    margin-top: 0px;
+    z-index: 0;
   }
   .blessing {
       position: absolute;
       width: 96px;
       right: 24px;
-      top: 12px;
+      top: 0;
       transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      /* animation: appear 2s 2.5s forwards; */
-      z-index: 1;
+      animation: loop 3s 3s infinite alternate;
+      z-index: 5;
+      img{
+        /* animation: circle 8s 3s infinite linear;
+        transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        transform-origin: center;
+        shape-rendering: crispEdges; */
+      }
+      p{
+        padding: 0;
+        margin: 0;
+        position: absolute;
+        color: #436335;
+        font-weight: bold;
+        font-size: 12px;
+        font-family: 'Noto Sans TC';
+        top: 37px;
+        left: 22px;
+        transform: rotate(12deg);
+      }
+      @keyframes circle {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
       img{
         width: 100%;
       }
@@ -867,7 +1182,8 @@ const MobileCard = styled.div`
       margin-top: 0;
       padding: 0 16px;
       svg{
-        height: 36vh!important;
+        height: calc(94vh - 420px)!important;
+        height: calc(94dvh - 420px)!important;
       }
     }
     a{
@@ -895,13 +1211,13 @@ const MobileCard = styled.div`
 
 const Cases = styled.div`
   border-top: 1px solid #FDF0E6;
-  padding: 12px;
+  padding: 12px 42px;
   color: #FDF0E6;
   font-weight: bold;
   position: fixed;
   bottom: 0;
   left: 0;
-  width: calc(100% - 24px);
+  width: calc(100% - 84px);
   height: 24px;
   z-index: 20;
   background-color: #436335;
@@ -913,7 +1229,7 @@ const Cases = styled.div`
   line-height: 24px; /* 150% */
   letter-spacing: 1.28px;
   transition: all .5s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
-  cursor: pointer;
+  /* cursor: pointer; */
   display: none;
   &.active{
     height: 64vh;
@@ -926,6 +1242,7 @@ const Cases = styled.div`
       align-items: center;
       gap: 40px;
       position: relative;
+      width: 100%;
       margin: 0;
       opacity: 0;
       animation: appear 0s 1.53s forwards;
@@ -934,6 +1251,8 @@ const Cases = styled.div`
         color: initial;
         text-decoration: none;
         z-index: 1;
+        width: 100%;
+        text-align: left;
       }
       p{
         z-index: 10;
@@ -941,11 +1260,23 @@ const Cases = styled.div`
         position: relative; 
         font-size: 18px;
       }
+      .disabled{
+        cursor: disabled; 
+        &:hover{
+            &::before {
+              width: 10px;
+            }  
+          }
+        p{
+          color: #687F58;
+        }
+      }
       li {
         position: relative;
         padding-left: 26px;
         font-family: "Noto Sans TC";
         font-weight: bold;
+        display: inline-block;
         color: #FDF0E6;
         cursor: pointer;
         &:hover{
@@ -979,7 +1310,25 @@ const Cases = styled.div`
       }
     }
     .opened-cases{
-      margin-top: 24px;
+      margin-top: 50px;
+      .comming-soon{
+        position: absolute;
+        right: -118px;
+        top: -24px;
+      }
+      .last{
+        li{
+          padding-left: 0;
+          &::before{
+            display: none;
+          }
+          p{
+            img{
+              margin: 0 10px -4px -7px;
+            }
+          }
+        }
+      }
     }
     .close-btn{
       cursor: pointer;
